@@ -7,7 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { MenuItem } from "../data/menu";
+import { MENU_SEED, type MenuItem } from "../data/menu";
+import { resetToDemoSeed } from "../lib/exporters";
 import {
   db,
   ensureSeeded,
@@ -92,6 +93,7 @@ type PosContextValue = {
   updateOrderStatus: (no: number, status: OrderStatus) => Promise<void>;
   openShift: (cashierName: string, startingCash: number) => Promise<void>;
   closeShift: (actualCash: number, notes?: string) => Promise<ShiftRecord>;
+  resetSeed: () => Promise<void>;
 };
 
 const PosContext = createContext<PosContextValue | null>(null);
@@ -218,12 +220,16 @@ export function PosProvider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         await ensureSeeded();
-        const [loadedProducts, loadedOrders, loadedTables, shift] = await Promise.all([
+        let [loadedProducts, loadedOrders, loadedTables, shift] = await Promise.all([
           loadProducts(),
           loadOrders(),
           loadTables(),
           loadActiveShift(),
         ]);
+        if (loadedProducts.length === 0) {
+          await db.products.bulkPut(MENU_SEED);
+          loadedProducts = await loadProducts();
+        }
         if (!alive) return;
         setProducts(loadedProducts);
         setOrders(loadedOrders);
@@ -508,6 +514,13 @@ export function PosProvider({ children }: { children: ReactNode }) {
     setGuests(table.seats);
   }, []);
 
+  const resetSeed = useCallback(async () => {
+    await resetToDemoSeed();
+    const [prods, tbls] = await Promise.all([loadProducts(), loadTables()]);
+    setProducts(prods);
+    setTables(tbls);
+  }, []);
+
   const value = useMemo<PosContextValue>(
     () => ({
       ready,
@@ -553,6 +566,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
       updateOrderStatus,
       openShift,
       closeShift,
+      resetSeed,
     }),
     [
       ready,
@@ -598,6 +612,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
       updateOrderStatus,
       openShift,
       closeShift,
+      resetSeed,
     ],
   );
 

@@ -6,6 +6,7 @@ import {
   FileUp,
   Percent,
   Printer,
+  RotateCcw,
   Store,
   X,
 } from "lucide-react";
@@ -18,7 +19,7 @@ import { usePos } from "../components/PosContext";
 import {
   exportBackupJson,
   exportProductsCsv,
-  importBackupJson,
+  importBackupFile,
 } from "../lib/exporters";
 import { getPrinterDriver, setPrinterDriver } from "../services/printer";
 import { cn } from "../lib/cn";
@@ -27,6 +28,9 @@ export default function Settings() {
   const {
     products,
     reloadProducts,
+    reloadTables,
+    reloadOrders,
+    resetSeed,
     taxEnabled,
     taxRate,
     serviceChargeEnabled,
@@ -110,13 +114,24 @@ export default function Settings() {
 
   const handleImport = async (file: File) => {
     try {
-      const count = await importBackupJson(file);
-      await reloadProducts();
+      const res = await importBackupFile(file);
+      await Promise.all([reloadProducts(), reloadTables(), reloadOrders()]);
       toast.success(t.data.importSuccess, {
-        description: t.data.importSuccessBody(count),
+        description: `Berhasil memulihkan ${res.products} produk, ${res.orders} pesanan, dan ${res.tables} meja.`,
       });
+    } catch (err) {
+      toast.error(t.data.importError, {
+        description: err instanceof Error ? err.message : t.data.importErrorBody,
+      });
+    }
+  };
+
+  const handleResetSeed = async () => {
+    try {
+      await resetSeed();
+      toast.success("Menu bawaan dan meja restoran berhasil dimuat ulang!");
     } catch {
-      toast.error(t.data.importError, { description: t.data.importErrorBody });
+      toast.error("Gagal memuat ulang data demo");
     }
   };
 
@@ -215,7 +230,7 @@ export default function Settings() {
             icon={<FileDown size={19} aria-hidden="true" />}
             label={t.data.card}
             value={`${products.length} produk tersimpan lokal`}
-            note={t.data.exportHint}
+            note="Cadangkan produk, pesanan, dan meja ke berkas JSON/CSV atau impor data baru."
             wide
           >
             <div className="flex flex-wrap gap-2">
@@ -233,7 +248,7 @@ export default function Settings() {
                 onClick={() => void exportBackupJson()}
               >
                 <FileDown size={15} aria-hidden="true" />
-                {t.data.exportJson}
+                Cadangkan Semua (JSON)
               </Button>
               <Button
                 variant="outline"
@@ -241,12 +256,21 @@ export default function Settings() {
                 onClick={() => fileInputRef.current?.click()}
               >
                 <FileUp size={15} aria-hidden="true" />
-                {t.data.importJson}
+                Impor (JSON / CSV)
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetSeed}
+                className="text-xs text-ink/60 hover:text-ink hover:bg-ink/5"
+              >
+                <RotateCcw size={14} aria-hidden="true" className="mr-1" />
+                Muat Menu Demo Bawaan
               </Button>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="application/json"
+                accept=".json,.csv,application/json,text/csv"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
