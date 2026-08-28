@@ -1,0 +1,56 @@
+/* Tema kustom Filament — KASA: bottom navigation pada layar mobile */
+
+.fi-layout {
+    @media (max-width: 767px) {
+        .fi-sidebar {
+            position: fixed !important;
+            inset: auto 0 0 0 !important;
+            z-index: 50;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: stretch;
+            justify-content: space-around;
+            width: 100%;
+            height: auto !important;
+            padding: 0 !important;
+            padding-bottom: env(safe-area-inset-bottom) !important;
+            border-top: 1px solid rgb(255 255 255 / 0.12);
+            box-shadow: 0 -6px 20px rgb(0 0 0 / 0.25);
+        }
+
+        .fi-sidebar .fi-sidebar-header,
+        .fi-sidebar .fi-sidebar-group-label,
+        .fi-sidebar .fi-topbar-item-label,
+        .fi-sidebar .fi-sidebar-item-label,
+        .fi-sidebar .fi-sidebar-group > span {
+            display: none !important;
+        }
+
+        .fi-sidebar nav,
+        .fi-sidebar ul {
+            display: flex !important;
+            flex-direction: row !important;
+            width: 100%;
+            gap: 0 !important;
+        }
+
+        .fi-sidebar .fi-sidebar-item,
+        .fi-sidebar li {
+            flex: 1 1 0 !important;
+        }
+
+        .fi-sidebar .fi-sidebar-item a {
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.15rem !important;
+            padding: 0.55rem 0.15rem !important;
+            font-size: 0 !important;
+        }
+
+        .fi-sidebar .fi-sidebar-item a svg {
+            width: 1.35rem;
+            height: 1.35rem;
+        }
+    }
+}

@@ -1,0 +1,269 @@
+@import "tailwindcss";
+
+@theme {
+  --color-mineral: #eef0eb;
+  --color-ink: #14211f;
+  --color-counterlime: #c7f36b;
+  --color-coral: #bf493e;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  font-family: var(--font-body);
+}
+
+body {
+  background-color: var(--color-mineral);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--color-counterlime);
+  color: var(--color-ink);
+}
+
+/* ---- Interaction feel: fast, firm, no lingering motion ---- */
+
+.pressable {
+  transition:
+    transform 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms ease-out,
+    background-color 140ms ease-out,
+    border-color 140ms ease-out;
+}
+
+.pressable:active {
+  transform: scale(0.97);
+}
+
+.card-hover {
+  transition:
+    transform 160ms ease-out,
+    box-shadow 180ms ease-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -14px rgb(20 33 31 / 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---- Thermal receipt texture (screen panel) ---- */
+
+.receipt-paper {
+  background-color: #ffffff;
+}
+
+.receipt-perforation {
+  height: 2px;
+  background-image: linear-gradient(90deg, rgb(20 33 31 / 0.35) 50%, transparent 50%);
+  background-size: 8px 2px;
+  background-repeat: repeat-x;
+}
+
+.label-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-display);
+}
+
+/* ---- Mobile / touch hardening (fondasi Android) ---- */
+
+html {
+  overscroll-behavior-y: contain;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  user-select: none;
+}
+
+@media (pointer: coarse) {
+  .kbd-hint {
+    display: none;
+  }
+}
+
+/* ---- Print: only the thermal receipt leaves the app ---- */
+
+#print-root {
+  display: none;
+}
+
+@media print {
+  .screen-root {
+    display: none !important;
+  }
+
+  #print-root {
+    display: block !important;
+  }
+
+  @page {
+    margin: 8mm;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+}
+
+.report-print {
+  width: 100%;
+  color: #14211f;
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.report-print h1 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+
+.report-print .rp-sub {
+  font-size: 10px;
+  color: rgb(20 33 31 / 0.6);
+  margin-bottom: 8px;
+}
+
+.report-print table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-print th,
+.report-print td {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgb(20 33 31 / 0.15);
+}
+
+.report-print th {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.report-print .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-print .report-total td {
+  font-weight: 700;
+  border-top: 1px solid #14211f;
+  border-bottom: none;
+}
+
+/* ---- Thermal receipt (print layer) ---- */
+
+.receipt-print {
+  width: 64mm;
+  color: #14211f;
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.rp-head {
+  text-align: center;
+}
+
+.rp-logo {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.rp-tagline {
+  font-size: 8.5px;
+  letter-spacing: 0.28em;
+}
+
+.rp-sep {
+  border-top: 1px dashed #14211f;
+  margin: 6px 0;
+}
+
+.rp-strong {
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+.rp-muted {
+  color: rgb(20 33 31 / 0.65);
+}
+
+.rp-center {
+  text-align: center;
+}
+
+.rp-items {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rp-items td,
+.rp-summary td {
+  vertical-align: top;
+  padding: 1.5px 0;
+}
+
+.rp-qty {
+  width: 7mm;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rp-name {
+  padding-right: 3mm;
+}
+
+.rp-unit {
+  display: block;
+  font-size: 9px;
+  color: rgb(20 33 31 / 0.55);
+}
+
+.rp-amt {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-summary {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rp-total-row td {
+  padding-top: 4px;
+  border-top: 1px solid #14211f;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+}

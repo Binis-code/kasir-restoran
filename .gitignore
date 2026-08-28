@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment and Secrets (CRITICAL: Do NOT commit any credentials or tokens)
+.env
+.env.*
+!.env.example
+*.key
+auth.json
+oauth-private.key
+oauth-public.key
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+public/build/
+public/hot/
+
+# Storage and Logs
+*.log
+*.log.*
+storage/
+!server/storage/
+server/storage/*.key
+server/storage/logs/*
+server/storage/framework/cache/*
+server/storage/framework/sessions/*
+server/storage/framework/views/*
+!server/storage/.gitignore
+dev-server.log
+
+# Databases (local sqlite)
+*.sqlite
+*.sqlite-journal
+database/*.sqlite
+
+# Editor and Tooling state
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.opencode/
+.opencode-trace/
+.phpunit.cache/
+.phpunit.result.cache
+
+# Ephemeral output
+.impeccable/
