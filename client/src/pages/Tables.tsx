@@ -1,83 +1,177 @@
-import { Armchair, Coffee } from "lucide-react";
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { Armchair, Coffee, Edit, Plus, UtensilsCrossed } from "lucide-react";
 import { formatIDR } from "../data/menu";
 import { t } from "../locales/en";
 import { Header } from "../components/Header";
-import { usePos } from "../components/PosContext";
+import { Button } from "../components/ui/Button";
+import { TableModal } from "../components/TableModal";
+import { usePos, type TableRow } from "../components/PosContext";
 import { cn } from "../lib/cn";
-
-type TableCard = {
-  id: string;
-  name: string;
-  seats: number;
-  active?: boolean;
-};
 
 export default function Tables() {
   const pos = usePos();
-  const tableActive = pos.orderType === "meja" && pos.lines.length > 0;
+  const [, setLocation] = useLocation();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedTable, setSelectedTable] = useState<TableRow | null>(null);
 
-  const tables: TableCard[] = [
-    { id: "meja-01", name: "Meja 01", seats: 2 },
-    { id: "meja-02", name: "Meja 02", seats: 4 },
-    { id: "meja-03", name: "Meja 03", seats: 4 },
-    {
-      id: "meja-04",
-      name: `Meja ${String(pos.tableNumber).padStart(2, "0")}`,
-      seats: 4,
-      active: tableActive,
-    },
-    { id: "teras-01", name: "Teras 01", seats: 6 },
-  ];
+  const handleOpenAdd = () => {
+    setSelectedTable(null);
+    setModalOpen(true);
+  };
+
+  const handleOpenEdit = (table: TableRow, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedTable(table);
+    setModalOpen(true);
+  };
+
+  const handleSave = async (table: TableRow) => {
+    if (selectedTable) {
+      await pos.updateTable(table);
+    } else {
+      await pos.addTable(table);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    await pos.deleteTable(id);
+  };
+
+  const handleSelectTableAndOrder = (table: TableRow) => {
+    pos.selectTable(table);
+    setLocation("/");
+  };
+
+  // Find if table has an active draft or unpaid order
+  const getTableActiveOrder = (table: TableRow) => {
+    const numMatch = table.name.match(/\d+/);
+    const num = numMatch ? Number.parseInt(numMatch[0], 10) : undefined;
+    if (!num) return null;
+
+    // Check currently active draft cart in POS
+    if (pos.orderType === "meja" && pos.tableNumber === num && pos.lines.length > 0) {
+      return {
+        orderNo: pos.orderNo,
+        total: pos.totals.total,
+        label: "Sedang Dipesan",
+      };
+    }
+
+    // Check unpaid stored orders
+    const activeOrder = pos.orders.find(
+      (o) => o.orderType === "meja" && o.tableNumber === num && o.status !== "sudah-dibayar",
+    );
+    if (activeOrder) {
+      return {
+        orderNo: activeOrder.no,
+        total: activeOrder.total,
+        label: activeOrder.status === "siap" ? "Siap Disajikan" : "Disimpan",
+      };
+    }
+
+    return null;
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
       <Header title={t.tablesPage.title} />
       <div className="flex-1 p-5 md:p-8">
-        <p className="-mt-1 mb-5 text-sm text-ink/55">{t.tablesPage.subtitle}</p>
+        <div className="-mt-1 mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm text-ink/55">{t.tablesPage.subtitle}</p>
+            <p className="text-xs font-semibold text-ink/40">
+              Total: {pos.tables.length} meja makan terdaftar
+            </p>
+          </div>
+          <Button onClick={handleOpenAdd}>
+            <Plus size={16} className="mr-1" />
+            Tambah Meja Baru
+          </Button>
+        </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {tables.map((table) => (
-            <article
-              key={table.id}
-              className={cn(
-                "card-hover rounded-xl border bg-white p-5",
-                table.active
-                  ? "border-counterlime ring-1 ring-counterlime"
-                  : "border-ink/10",
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <span
-                  className={cn(
-                    "flex h-11 w-11 items-center justify-center rounded-lg",
-                    table.active ? "bg-counterlime text-ink" : "bg-ink/5 text-ink/60",
-                  )}
-                >
-                  <Armchair size={21} aria-hidden="true" />
-                </span>
-                <span
-                  className={
-                    table.active
-                      ? "rounded-full bg-counterlime px-2.5 py-1 text-[11px] font-bold text-ink"
-                      : "rounded-full bg-ink/6 px-2.5 py-1 text-[11px] font-semibold text-ink/55"
-                  }
-                >
-                  {table.active ? "Aktif" : t.tablesPage.empty}
-                </span>
-              </div>
-              <h3 className="mt-3 font-display text-base font-bold tracking-tight text-ink">
-                {table.name}
-              </h3>
-              <p className="mt-0.5 text-xs text-ink/50">
-                {t.tablesPage.seatsUnit(table.seats)}
-              </p>
-              {table.active && (
-                <p className="mt-3 border-t border-dashed border-ink/15 pt-3 font-display text-sm font-bold text-ink">
-                  {t.tablesPage.activeOrder(pos.orderNo, formatIDR(pos.totals.total))}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {pos.tables.map((table) => {
+            const activeInfo = getTableActiveOrder(table);
+            const isActive = !!activeInfo;
+
+            return (
+              <article
+                key={table.id}
+                onClick={() => handleSelectTableAndOrder(table)}
+                className={cn(
+                  "card-hover cursor-pointer rounded-xl border bg-white p-5 transition-all hover:shadow-md",
+                  isActive
+                    ? "border-counterlime ring-2 ring-counterlime/40"
+                    : "border-ink/10 hover:border-ink/25",
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "flex h-11 w-11 items-center justify-center rounded-lg",
+                        isActive ? "bg-counterlime text-ink" : "bg-ink/5 text-ink/60",
+                      )}
+                    >
+                      <Armchair size={21} aria-hidden="true" />
+                    </span>
+                    <div>
+                      <span className="rounded-md bg-ink/6 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ink/60">
+                        {table.area || "Utama"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={
+                        isActive
+                          ? "rounded-full bg-counterlime px-2.5 py-1 text-[11px] font-bold text-ink"
+                          : "rounded-full bg-ink/6 px-2.5 py-1 text-[11px] font-semibold text-ink/55"
+                      }
+                    >
+                      {isActive ? activeInfo.label : t.tablesPage.empty}
+                    </span>
+
+                    <button
+                      type="button"
+                      aria-label={`Edit ${table.name}`}
+                      onClick={(e) => handleOpenEdit(table, e)}
+                      className="rounded-lg p-1.5 text-ink/40 hover:bg-ink/5 hover:text-ink"
+                    >
+                      <Edit size={15} />
+                    </button>
+                  </div>
+                </div>
+
+                <h3 className="mt-3 font-display text-base font-bold tracking-tight text-ink">
+                  {table.name}
+                </h3>
+                <p className="mt-0.5 text-xs text-ink/50">
+                  {t.tablesPage.seatsUnit(table.seats)}
                 </p>
-              )}
-            </article>
-          ))}
+
+                {isActive ? (
+                  <div className="mt-3 border-t border-dashed border-ink/15 pt-3">
+                    <p className="font-display text-sm font-bold text-ink">
+                      {t.tablesPage.activeOrder(activeInfo.orderNo, formatIDR(activeInfo.total))}
+                    </p>
+                    <p className="mt-0.5 text-[11px] font-semibold text-counterlime-dark">
+                      Klik untuk buka / tambah menu meja ini
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-3 border-t border-ink/6 pt-3 flex items-center justify-between text-xs text-ink/40">
+                    <span>Meja Kosong</span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-ink/70 hover:underline">
+                      <UtensilsCrossed size={12} /> Buka Pesanan
+                    </span>
+                  </div>
+                )}
+              </article>
+            );
+          })}
 
           <article className="card-hover rounded-xl border border-ink/10 bg-white p-5">
             <div className="flex items-center justify-between">
@@ -95,6 +189,14 @@ export default function Tables() {
           </article>
         </div>
       </div>
+
+      <TableModal
+        open={modalOpen}
+        tableToEdit={selectedTable}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSave}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }

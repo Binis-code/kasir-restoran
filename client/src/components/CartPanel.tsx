@@ -74,6 +74,27 @@ export function CartPanel({
           />
         </div>
 
+        {orderType === "meja" && (
+          <div className="mt-2.5 flex items-center justify-between px-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-ink/60">Nomor Meja</span>
+            <select
+              value={tableNumber}
+              onChange={(e) => pos.setTableNumber(Number.parseInt(e.target.value, 10))}
+              className="h-8 rounded-lg border border-ink/15 bg-white px-2.5 text-xs font-bold text-ink focus:border-ink/40 focus:outline-none focus:ring-1 focus:ring-counterlime"
+            >
+              {pos.tables.map((tbl) => {
+                const numMatch = tbl.name.match(/\d+/);
+                const num = numMatch ? Number.parseInt(numMatch[0], 10) : 1;
+                return (
+                  <option key={tbl.id} value={num}>
+                    {tbl.name} ({tbl.area || "Utama"} · {tbl.seats} Kursi)
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
+
         <div className="mt-3 flex items-center justify-between px-1">
           <span className="text-sm font-medium text-ink/70">Jumlah tamu</span>
           <span className="flex items-center gap-2">

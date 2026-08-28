@@ -1,11 +1,32 @@
-import { db, type OrderRow, type PayMethod } from "./db";
+import { db, type OrderRow, type PayMethod, type TableRow } from "./db";
 import type { MenuItem } from "../data/menu";
 
-export type { OrderRow };
+export type { OrderRow, TableRow };
 
 export async function loadProducts(): Promise<MenuItem[]> {
   const rows = await db.products.toArray();
   return rows.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function saveProduct(item: MenuItem): Promise<void> {
+  await db.products.put(item);
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  await db.products.delete(id);
+}
+
+export async function loadTables(): Promise<TableRow[]> {
+  const rows = await db.tables.toArray();
+  return rows.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+}
+
+export async function saveTable(table: TableRow): Promise<void> {
+  await db.tables.put(table);
+}
+
+export async function deleteTable(id: string): Promise<void> {
+  await db.tables.delete(id);
 }
 
 export async function loadOrders(): Promise<OrderRow[]> {

@@ -18,14 +18,38 @@ export type OrderRow = {
   createdAt: number;
 };
 
+export type TableRow = {
+  id: string;
+  name: string;
+  seats: number;
+  area: string;
+  active?: boolean;
+};
+
+export const DEFAULT_TABLES: TableRow[] = [
+  { id: "meja-01", name: "Meja 01", seats: 2, area: "Utama" },
+  { id: "meja-02", name: "Meja 02", seats: 4, area: "Utama" },
+  { id: "meja-03", name: "Meja 03", seats: 4, area: "Utama" },
+  { id: "meja-04", name: "Meja 04", seats: 4, area: "Utama" },
+  { id: "teras-01", name: "Teras 01", seats: 6, area: "Teras" },
+  { id: "teras-02", name: "Teras 02", seats: 4, area: "Teras" },
+];
+
 export const db = new Dexie("kasa-kasir") as Dexie & {
   products: EntityTable<MenuItem, "id">;
   orders: EntityTable<OrderRow, "no">;
+  tables: EntityTable<TableRow, "id">;
 };
 
 db.version(1).stores({
   products: "id, barcode, name, category",
   orders: "no, status, paidAt, createdAt",
+});
+
+db.version(2).stores({
+  products: "id, barcode, name, category",
+  orders: "no, status, paidAt, createdAt",
+  tables: "id, name, area",
 });
 
 const SEED_ORDERS: OrderRow[] = [
@@ -38,12 +62,15 @@ const SEED_ORDERS: OrderRow[] = [
 db.on("populate", (tx) => {
   void tx.table("products").bulkPut(MENU_SEED);
   void tx.table("orders").bulkAdd(SEED_ORDERS);
+  void tx.table("tables").bulkPut(DEFAULT_TABLES);
 });
 
 export async function ensureSeeded(): Promise<void> {
   await db.open();
   const productCount = await db.products.count();
   const orderCount = await db.orders.count();
+  const tableCount = await db.tables.count();
   if (productCount === 0) await db.products.bulkPut(MENU_SEED);
   if (orderCount === 0) await db.orders.bulkAdd(SEED_ORDERS);
+  if (tableCount === 0) await db.tables.bulkPut(DEFAULT_TABLES);
 }
