@@ -10,6 +10,7 @@ import Tables from "./pages/Tables";
 import Products from "./pages/Products";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Kitchen from "./pages/Kitchen";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
           <main className="min-w-0 flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
             <Switch>
               <Route path="/" component={Home} />
+              <Route path="/dapur" component={Kitchen} />
               <Route path="/pesanan" component={Orders} />
               <Route path="/meja" component={Tables} />
               <Route path="/produk" component={Products} />

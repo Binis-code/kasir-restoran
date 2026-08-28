@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   Armchair,
   BarChart3,
+  ChefHat,
   ChevronLeft,
   ChevronRight,
   CirclePlus,
@@ -42,6 +43,7 @@ export function Sidebar() {
   const { orders } = usePos();
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const running = runningOrdersCount(orders);
+  const kitchenWaiting = orders.filter((o) => o.status === "disimpan" || o.status === "memasak").length;
 
   const toggle = () => {
     setCollapsed((prev) => {
@@ -52,6 +54,7 @@ export function Sidebar() {
 
   const navEntries: NavEntry[] = [
     { href: "/", label: t.nav.newPos, icon: CirclePlus },
+    { href: "/dapur", label: "Dapur (KDS)", icon: ChefHat, badge: kitchenWaiting },
     { href: "/pesanan", label: t.nav.orders, icon: ReceiptText, badge: running },
     { href: "/meja", label: t.nav.tables, icon: Armchair },
     { href: "/produk", label: t.nav.products, icon: Package },
@@ -175,6 +178,7 @@ export function MobileNav() {
   const [location] = useLocation();
   const entries: NavEntry[] = [
     { href: "/", label: t.nav.newPos, icon: CirclePlus },
+    { href: "/dapur", label: "Dapur", icon: ChefHat },
     { href: "/pesanan", label: t.nav.orders, icon: ReceiptText },
     { href: "/meja", label: t.nav.tables, icon: Armchair },
     { href: "/produk", label: t.nav.products, icon: Package },

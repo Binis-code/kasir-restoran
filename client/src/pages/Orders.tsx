@@ -85,10 +85,11 @@ export default function Orders() {
 
 function StatusChip({ status }: { status: OrderStatus }) {
   const map: Record<OrderStatus, { label: string; tone: "lime" | "neutral" | "dark" }> = {
+    memasak: { label: "Dimasak", tone: "lime" },
     siap: { label: t.ordersPage.statusSiap, tone: "lime" },
     "sudah-dibayar": { label: t.ordersPage.statusDibayar, tone: "neutral" },
     disimpan: { label: t.ordersPage.statusDisimpan, tone: "dark" },
   };
-  const entry = map[status];
+  const entry = map[status] || { label: status, tone: "neutral" };
   return <Badge tone={entry.tone}>{entry.label}</Badge>;
 }

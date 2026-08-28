@@ -1,7 +1,7 @@
-import { db, type OrderRow, type PayMethod, type TableRow } from "./db";
+import { db, type OrderRow, type OrderStatus, type PayMethod, type ShiftRecord, type TableRow } from "./db";
 import type { MenuItem } from "../data/menu";
 
-export type { OrderRow, TableRow };
+export type { OrderRow, TableRow, ShiftRecord };
 
 export async function loadProducts(): Promise<MenuItem[]> {
   const rows = await db.products.toArray();
@@ -43,6 +43,18 @@ export async function saveOrder(row: OrderRow): Promise<void> {
   await db.orders.put(row);
 }
 
+export async function updateOrderStatus(no: number, status: OrderStatus): Promise<void> {
+  await db.orders.update(no, { status });
+}
+
+export async function loadActiveShift(): Promise<ShiftRecord | undefined> {
+  return db.shifts.where("status").equals("OPEN").first();
+}
+
+export async function saveShift(shift: ShiftRecord): Promise<void> {
+  await db.shifts.put(shift);
+}
+
 export async function findProductByBarcode(
   code: string,
 ): Promise<MenuItem | undefined> {
@@ -58,10 +70,15 @@ export function toOrderRow(input: {
   no: number;
   status: OrderRow["status"];
   total: number;
+  subtotal?: number;
+  tax?: number;
+  discount?: number;
+  serviceCharge?: number;
   itemCount: number;
   method?: PayMethod;
   orderType: OrderRow["orderType"];
   tableNumber?: number;
+  tableName?: string;
   guests?: number;
   paidAt?: number;
 }): OrderRow {
