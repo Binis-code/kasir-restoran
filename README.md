@@ -2,6 +2,21 @@
 
 Aplikasi kasir (Point of Sale) dan manajemen pesanan berbasis web dengan arsitektur offline-first untuk operasional restoran, kedai kopi, dan usaha kuliner.
 
+![Tampilan Kasir KASA POS](docs/images/01-pos-kasir.png)
+
+---
+
+## Tangkapan Layar Aplikasi
+
+| Modul | Gambar Antarmuka |
+| :--- | :--- |
+| **Kasir & Transaksi POS** | ![Kasir POS](docs/images/01-pos-kasir.png) |
+| **Layar Dapur (KDS)** | ![Layar Dapur KDS](docs/images/02-dapur-kds.png) |
+| **Tata Letak & Meja Makan** | ![Manajemen Meja](docs/images/03-manajemen-meja.png) |
+| **Katalog Produk & Menu** | ![Katalog Produk](docs/images/04-katalog-produk.png) |
+| **Laporan Penjualan** | ![Laporan Penjualan](docs/images/05-laporan-penjualan.png) |
+| **Pengaturan Shift & Printer** | ![Pengaturan Shift](docs/images/06-pengaturan-shift.png) |
+
 ---
 
 ## Fitur Aplikasi
@@ -55,6 +70,7 @@ Aplikasi kasir (Point of Sale) dan manajemen pesanan berbasis web dengan arsitek
 │   │   ├── lib/         # Dexie IndexedDB schema & data repository
 │   │   ├── pages/       # Kasir, Dapur, Pesanan, Meja, Produk, Laporan, Pengaturan
 │   │   └── services/    # ESC/POS binary encoder & Bluetooth GATT driver
+├── docs/                # Aset dokumentasi dan tangkapan layar antarmuka
 ├── server/              # Backend opsional (Laravel 11 REST API & Filament Admin)
 └── capacitor/           # Konfigurasi wrapper native Android/iOS
 ```
