@@ -46,5 +46,9 @@ Thumbs.db
 .phpunit.cache/
 .phpunit.result.cache
 
-# Ephemeral output
+# Ephemeral output & Prompts
 .impeccable/
+Master Prompt*.md
+*.prompt.md
+*.scratchpad.md
+
