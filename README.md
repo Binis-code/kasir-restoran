@@ -1,45 +1,82 @@
-# 🍽️ KASA — Sistem Kasir Restoran & Kuliner (Point of Sale)
+# KASA POS — Sistem Kasir & Manajemen Restoran
 
-> Aplikasi Point of Sale (POS) modern, cepat, dan offline-first yang dirancang khusus untuk warung, kedai kopi, restoran, dan usaha kuliner F&B.
-
----
-
-## ✨ Fitur Utama
-
-- 🛒 **Katalog & Transaksi Cepat**: Pemilihan menu cepat, pencarian instan (`Ctrl + K`), filter kategori, dan kalkulasi otomatis (Subtotal, PPN 11%, Diskon, & Kembalian).
-- 🖨️ **Driver Struk Thermal Bluetooth (ESC/POS)**: Generator nota kasir 58mm & 80mm nirkabel langsung dari browser via Web Bluetooth GATT tanpa driver tambahan.
-- 📱 **Dynamic QRIS & Barcode Scanner**: Tampilan kode QRIS dinamis di layar kasir dan pemindaian barcode produk dengan kamera.
-- 🥗 **Kelola Menu Produk (CRUD)**: Tambah, edit, hapus produk makanan & minuman, pengaturan harga, deskripsi, dan kode barcode.
-- 🪑 **Manajemen Meja & Area Kustom (CRUD)**: Kelola meja makan, kapasitas kursi, area kustom (*Utama, Teras, VIP, Rooftop, Lesehan*), filter area, dan deteksi meja aktif.
-- 💾 **Offline-First Resilience**: Penyimpanan lokal menggunakan Dexie IndexedDB, memastikan kasir tetap dapat bertransaksi saat koneksi internet terputus.
-- 📊 **Laporan Penjualan**: Ringkasan omset harian & bulanan serta ekspor data ke Excel (XLSX) dan CSV.
+Aplikasi kasir (Point of Sale) dan manajemen pesanan berbasis web dengan arsitektur offline-first untuk operasional restoran, kedai kopi, dan usaha kuliner.
 
 ---
 
-## 🛠️ Tech Stack
+## Fitur Aplikasi
 
-| Lapisan | Teknologi |
-| :--- | :--- |
-| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS 4 |
-| **Icons & UI** | Lucide React, Sonner (Toasts) |
-| **Database Lokal** | Dexie.js (IndexedDB) |
-| **Hardware Driver** | Web Bluetooth API (ESC/POS Raw Command Engine) |
-| **Backend API** | Laravel 11/12, Filament Admin Panel, SQLite / MySQL |
-| **Mobile Bridge** | Capacitor (Android / iOS) |
+### 1. Kasir & Transaksi (`/`)
+- Pencarian menu instan (`Ctrl + K`) dan filter kategori.
+- Multi-tab keranjang per meja (pindah antar meja tanpa kehilangan draft pesanan).
+- Penambahan catatan khusus per item (contoh: *less sugar, level pedas*).
+- Diskon transaksi dinamis (persentase atau potongan nominal).
+- Kalkulasi otomatis subtotal, diskon, service charge, dan pajak (PPN).
+- Pembayaran tunai dengan hitung kembalian, QRIS dinamis, dan kartu.
+
+### 2. Layar Dapur / Kitchen Display System (`/dapur`)
+- Tiket pesanan masuk secara real-time untuk koki dan barista.
+- Indikator durasi antrean dan penanda pesanan mendesak (> 15 menit).
+- Transisi status satu klik: *Menunggu -> Dimasak -> Siap Saji -> Selesai*.
+- Tampilan detail item beserta catatan kustom pelanggan.
+
+### 3. Manajemen Meja & Area (`/meja`)
+- Pengaturan tata letak meja makan, nomor meja, dan jumlah kursi.
+- Input nama area bebas dengan rekomendasi cepat (*Utama, Teras, VIP, Rooftop, Lesehan*).
+- Filter meja berdasarkan area dan visualisasi status meja aktif / kosong.
+- Buka pesanan meja langsung dari kartu denah meja.
+
+### 4. Katalog Produk (`/produk`)
+- Tambah, edit, dan hapus menu makanan, minuman, dan camilan.
+- Pengaturan harga jual, estimasi waktu masak, deskripsi, dan barcode scanner.
+
+### 5. Shift Kasir & Rekonsiliasi Laci Kas (`/pengaturan`)
+- Buka shift: pencatatan kasir bertugas dan modal awal uang kembalian.
+- Tutup shift: rekonsiliasi otomatis antara rekap transaksi tunai sistem dengan uang fisik laci kas (deteksi selisih pas, surplus, atau minus).
+
+### 6. Hardware Printer Thermal Bluetooth (ESC/POS)
+- Integrasi langsung via Web Bluetooth API (GATT) tanpa software pihak ketiga.
+- Generator biner ESC/POS untuk ukuran kertas 58mm dan 80mm.
+- Mode fallback cetak dialog browser standar.
+
+### 7. Cadangan Data & Laporan (`/laporan` & `/pengaturan`)
+- Ekspor laporan penjualan ke format Excel (.xlsx).
+- Cadangan penuh data lokal (produk, pesanan, meja, shift) ke file JSON.
+- Impor data dari file JSON cadangan dan file spreadsheet CSV.
 
 ---
 
-## 🚀 Cara Menjalankan Aplikasi
+## Struktur Folder
 
-### 1. Frontend Client
+```text
+├── client/              # Frontend SPA (React 19 + TypeScript + Vite + Tailwind 4)
+│   ├── src/
+│   │   ├── components/  # Komponen UI, Cart, Modal, Context
+│   │   ├── lib/         # Dexie IndexedDB schema & data repository
+│   │   ├── pages/       # Kasir, Dapur, Pesanan, Meja, Produk, Laporan, Pengaturan
+│   │   └── services/    # ESC/POS binary encoder & Bluetooth GATT driver
+├── server/              # Backend opsional (Laravel 11 REST API & Filament Admin)
+└── capacitor/           # Konfigurasi wrapper native Android/iOS
+```
+
+---
+
+## Cara Menjalankan Aplikasi
+
+### Kebutuhan Sistem
+- Node.js 18+
+- pnpm / npm / yarn
+- PHP 8.2+ & Composer (hanya jika ingin menjalankan server Laravel)
+
+### 1. Menjalankan Frontend
 ```bash
 cd client
 pnpm install
 pnpm dev
 ```
-Buka browser di `http://localhost:5173` atau `http://localhost:5174`.
+Buka browser pada alamat `http://localhost:5173`.
 
-### 2. Backend Laravel (Opsional untuk sinkronisasi server)
+### 2. Menjalankan Backend Laravel (Opsional)
 ```bash
 cd server
 composer install
@@ -49,7 +86,14 @@ php artisan migrate --seed
 php artisan serve
 ```
 
+### 3. Build Produksi
+```bash
+cd client
+pnpm build
+```
+Hasil build statis dan service worker PWA berada di folder `client/dist`.
+
 ---
 
-## 📄 Lisensi
-Didistribusikan di bawah lisensi open-source MIT.
+## Lisensi
+MIT
