@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { Armchair, Coffee, Edit, Plus, UtensilsCrossed } from "lucide-react";
 import { formatIDR } from "../data/menu";
@@ -14,6 +14,20 @@ export default function Tables() {
   const [, setLocation] = useLocation();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState<TableRow | null>(null);
+  const [activeAreaFilter, setActiveAreaFilter] = useState<string>("Semua");
+
+  const availableAreas = useMemo(() => {
+    const set = new Set<string>();
+    for (const tbl of pos.tables) {
+      if (tbl.area && tbl.area.trim()) set.add(tbl.area.trim());
+    }
+    return Array.from(set);
+  }, [pos.tables]);
+
+  const filteredTables = useMemo(() => {
+    if (activeAreaFilter === "Semua") return pos.tables;
+    return pos.tables.filter((tbl) => (tbl.area || "Utama") === activeAreaFilter);
+  }, [pos.tables, activeAreaFilter]);
 
   const handleOpenAdd = () => {
     setSelectedTable(null);
@@ -77,7 +91,7 @@ export default function Tables() {
     <div className="flex min-h-screen flex-col">
       <Header title={t.tablesPage.title} />
       <div className="flex-1 p-5 md:p-8">
-        <div className="-mt-1 mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="-mt-1 mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm text-ink/55">{t.tablesPage.subtitle}</p>
             <p className="text-xs font-semibold text-ink/40">
@@ -90,8 +104,47 @@ export default function Tables() {
           </Button>
         </div>
 
+        {/* Area Filter Tabs */}
+        {availableAreas.length > 0 && (
+          <div className="mb-5 flex flex-wrap items-center gap-1.5 border-b border-ink/10 pb-3">
+            <span className="text-xs font-bold text-ink/50 mr-2">Filter Area:</span>
+            <button
+              type="button"
+              onClick={() => setActiveAreaFilter("Semua")}
+              className={cn(
+                "rounded-lg px-3 py-1 text-xs font-semibold transition-all",
+                activeAreaFilter === "Semua"
+                  ? "bg-ink text-mineral shadow-xs"
+                  : "bg-ink/5 text-ink/70 hover:bg-ink/10",
+              )}
+            >
+              Semua Area ({pos.tables.length})
+            </button>
+
+            {availableAreas.map((areaName) => {
+              const count = pos.tables.filter((t) => (t.area || "Utama") === areaName).length;
+              const isSelected = activeAreaFilter === areaName;
+              return (
+                <button
+                  key={areaName}
+                  type="button"
+                  onClick={() => setActiveAreaFilter(areaName)}
+                  className={cn(
+                    "rounded-lg px-3 py-1 text-xs font-semibold transition-all",
+                    isSelected
+                      ? "bg-counterlime text-ink font-bold shadow-xs"
+                      : "bg-ink/5 text-ink/70 hover:bg-ink/10",
+                  )}
+                >
+                  {areaName} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {pos.tables.map((table) => {
+          {filteredTables.map((table) => {
             const activeInfo = getTableActiveOrder(table);
             const isActive = !!activeInfo;
 
@@ -193,6 +246,7 @@ export default function Tables() {
       <TableModal
         open={modalOpen}
         tableToEdit={selectedTable}
+        availableAreas={availableAreas}
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
         onDelete={handleDelete}

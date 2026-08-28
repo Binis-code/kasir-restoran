@@ -3,20 +3,32 @@ import { Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import type { TableRow } from "../lib/db";
 import { Button } from "./ui/Button";
+import { cn } from "../lib/cn";
 
 interface TableModalProps {
   open: boolean;
   tableToEdit?: TableRow | null;
+  availableAreas?: string[];
   onClose: () => void;
   onSave: (table: TableRow) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
 }
 
-const AREAS = ["Utama", "Teras", "VIP", "Lantai 2", "Outdoor"];
+const DEFAULT_AREAS = [
+  "Utama",
+  "Teras",
+  "VIP",
+  "Lantai 2",
+  "Outdoor",
+  "Lesehan",
+  "Rooftop",
+  "Gazebo",
+];
 
 export function TableModal({
   open,
   tableToEdit,
+  availableAreas = DEFAULT_AREAS,
   onClose,
   onSave,
   onDelete,
@@ -25,6 +37,10 @@ export function TableModal({
   const [seats, setSeats] = useState("4");
   const [area, setArea] = useState("Utama");
   const [submitting, setSubmitting] = useState(false);
+
+  const mergedAreas = Array.from(
+    new Set([...availableAreas, ...DEFAULT_AREAS]),
+  );
 
   useEffect(() => {
     if (tableToEdit) {
@@ -66,7 +82,7 @@ export function TableModal({
       toast.success(
         tableToEdit
           ? `Meja "${name}" berhasil diperbarui`
-          : `Meja "${name}" berhasil ditambahkan`,
+          : `Meja "${name}" berhasil ditambahkan ke area "${tableData.area}"`,
       );
       onClose();
     } catch (err) {
@@ -115,7 +131,7 @@ export function TableModal({
               {tableToEdit ? "Edit Meja" : "Tambah Meja Baru"}
             </h2>
             <p className="text-xs text-ink/55">
-              Kelola nomor meja, kapasitas kursi, dan area makan.
+              Kelola nomor meja, kapasitas kursi, dan custom area makan.
             </p>
           </div>
           <button
@@ -137,43 +153,74 @@ export function TableModal({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Contoh: Meja 05 / VIP 01"
+              placeholder="Contoh: Meja 05 / VIP 01 / Lesehan A"
               className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink/35 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-ink/70">
+              Kapasitas Kursi <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              required
+              min="1"
+              max="50"
+              value={seats}
+              onChange={(e) => setSeats(e.target.value)}
+              placeholder="4"
+              className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2.5 text-sm text-ink focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
               <label className="block text-xs font-bold uppercase tracking-wider text-ink/70">
-                Kapasitas Kursi <span className="text-red-500">*</span>
+                Area / Lokasi (Bisa Custom Bebas)
               </label>
-              <input
-                type="number"
-                required
-                min="1"
-                max="50"
-                value={seats}
-                onChange={(e) => setSeats(e.target.value)}
-                placeholder="4"
-                className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2.5 text-sm text-ink focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
-              />
+              <span className="text-[11px] font-medium text-counterlime-dark">
+                Ketik nama area apa saja
+              </span>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-ink/70">
-                Area / Lokasi
-              </label>
-              <select
-                value={area}
-                onChange={(e) => setArea(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2.5 text-sm text-ink focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
-              >
-                {AREAS.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
-                ))}
-              </select>
+            <input
+              type="text"
+              list="area-suggestions"
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+              placeholder="Ketik nama area kustom (contoh: Lesehan, Rooftop, VIP, Kolam)"
+              className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3.5 py-2.5 text-sm font-semibold text-ink placeholder:text-ink/35 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
+            />
+
+            <datalist id="area-suggestions">
+              {mergedAreas.map((a) => (
+                <option key={a} value={a} />
+              ))}
+            </datalist>
+
+            <div className="mt-2.5">
+              <p className="text-[11px] font-semibold text-ink/50 mb-1.5">Pilihan Cepat / Preset:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {mergedAreas.map((a) => {
+                  const isSelected = area.trim().toLowerCase() === a.trim().toLowerCase();
+                  return (
+                    <button
+                      key={a}
+                      type="button"
+                      onClick={() => setArea(a)}
+                      className={cn(
+                        "rounded-lg border px-2.5 py-1 text-xs transition-all",
+                        isSelected
+                          ? "border-counterlime bg-counterlime/25 font-bold text-ink shadow-xs"
+                          : "border-ink/10 bg-mineral/50 text-ink/70 hover:bg-mineral hover:text-ink",
+                      )}
+                    >
+                      {a}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -186,7 +233,7 @@ export function TableModal({
                 onClick={handleDelete}
                 disabled={submitting}
               >
-                <Trash2 size={15} className="mr-1" />
+                <Trash2 size={15} className="mr-1 text-red-500" />
                 Hapus Meja
               </Button>
             ) : (
