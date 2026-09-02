@@ -47,12 +47,25 @@ export default function Orders() {
                         className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-counterlime"
                       />
                     )}
-                    <p className="font-display font-bold tracking-tight text-ink">
-                      #{order.no}
-                    </p>
-                    <p className="mt-0.5 text-xs text-ink/50">
-                      {t.ordersPage.metaLine(order.itemCount)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-display font-bold tracking-tight text-ink">
+                        #{order.no}
+                      </p>
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-ink/70">
+                        {order.tableName || (order.tableNumber ? `Meja ${order.tableNumber}` : "Bawa Pulang")}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink/50">
+                      <span>{t.ordersPage.metaLine(order.itemCount)}</span>
+                      {order.waiterName && (
+                        <>
+                          <span>•</span>
+                          <span className="font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                            Pelayan: {order.waiterName}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </td>
                   <td className="px-5 py-4">
                     <StatusChip status={order.status} />

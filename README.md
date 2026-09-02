@@ -11,7 +11,9 @@ Aplikasi kasir (Point of Sale) dan manajemen pesanan berbasis web dengan arsitek
 | Modul | Gambar Antarmuka |
 | :--- | :--- |
 | **Kasir & Transaksi POS** | ![Kasir POS](docs/images/01-pos-kasir.png) |
+| **QR Self-Order Meja Pelanggan** | ![QR Self-Order](docs/images/33-customer-self-order-menu.png) |
 | **Layar Dapur (KDS)** | ![Layar Dapur KDS](docs/images/02-dapur-kds.png) |
+| **Mode Pelayan Terisolasi** | ![Mode Pelayan](docs/images/28-pelayan-2-siti-terisolasi.png) |
 | **Tata Letak & Meja Makan** | ![Manajemen Meja](docs/images/03-manajemen-meja.png) |
 | **Katalog Produk & Menu** | ![Katalog Produk](docs/images/04-katalog-produk.png) |
 | **Laporan Penjualan** | ![Laporan Penjualan](docs/images/05-laporan-penjualan.png) |
@@ -21,7 +23,22 @@ Aplikasi kasir (Point of Sale) dan manajemen pesanan berbasis web dengan arsitek
 
 ## Fitur Aplikasi
 
-### 1. Kasir & Transaksi (`/`)
+### 1. QR Self-Order Meja Pelanggan (`/order/:tableId`)
+- Pelanggan scan barcode di meja makan menggunakan smartphone masing-masing.
+- Terdeteksi otomatis nomor meja atau dapat memilih/ganti nomor meja langsung di layar.
+- Mengisi nama pemesan, memilih menu berfoto dengan catatan item khusus.
+- **Integrasi Langsung ke Dapur**: Pesanan langsung diteruskan ke Layar Dapur (KDS) tanpa antre ke kasir atau menunggu pelayan mencatat.
+- **Pelayanan Langsung ke Meja**: Makanan diantar langsung oleh runner/pelayan ke nomor meja yang tertera di tiket KDS.
+- **Opsi Pembayaran Fleksibel**: Bayar langsung via QRIS Mandiri atau Bayar Nanti saat selesai makan.
+- **Live Cooking Tracker**: Pelanggan dapat memantau status memasak secara langsung (*Diterima* ➔ *Dimasak di Dapur* ➔ *Siap Diantar ke Meja*).
+
+### 2. Multi-Pelayan Terisolasi (`/pelayan`)
+- Sesi keranjang terisolasi per akun pelayan (`kasa_waiter_cart_${staffId}`) sehingga draf tidak bertabrakan.
+- Deteksi & proteksi konflik meja (*Table Lock Indicator*): Menampilkan siapa pelayan yang sedang menangani meja tersebut.
+- 3 Tab Kerja: *Catat Pesanan*, *Pesanan Saya (Active Orders)*, dan *Denah Meja Restoran*.
+- Pergantian akun staf cepat menggunakan PIN 4 digit via numpad digital.
+
+### 3. Kasir & Transaksi POS (`/`)
 - Pencarian menu instan (`Ctrl + K`) dan filter kategori.
 - Multi-tab keranjang per meja (pindah antar meja tanpa kehilangan draft pesanan).
 - Penambahan catatan khusus per item (contoh: *less sugar, level pedas*).

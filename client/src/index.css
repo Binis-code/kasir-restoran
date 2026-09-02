@@ -4,9 +4,34 @@
   --color-mineral: #eef0eb;
   --color-ink: #14211f;
   --color-counterlime: #c7f36b;
+  --color-counterlime-dark: #82b02a;
   --color-coral: #bf493e;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ---- Sleek, non-intrusive modern scrollbars ---- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(20 33 31 / 0.16);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(20 33 31 / 0.35);
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 html {

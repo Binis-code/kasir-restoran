@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { db, DEFAULT_TABLES, type OrderRow, type TableRow } from "./db";
+import { db, tablesTable, DEFAULT_TABLES, type OrderRow, type TableRow } from "./db";
 import { MENU_SEED, type MenuItem } from "../data/menu";
 
 function download(blob: Blob, filename: string): void {
@@ -32,7 +32,7 @@ export async function exportBackupJson(): Promise<void> {
   const [products, orders, tables, shifts] = await Promise.all([
     db.products.toArray(),
     db.orders.toArray(),
-    db.tables.toArray(),
+    tablesTable.toArray(),
     db.shifts.toArray(),
   ]);
 
@@ -165,7 +165,7 @@ export async function importBackupFile(file: File): Promise<ImportResult> {
       await db.orders.bulkPut(validOrders);
     }
     if (validTables.length > 0) {
-      await db.tables.bulkPut(validTables);
+      await tablesTable.bulkPut(validTables);
     }
 
     return {
@@ -224,7 +224,7 @@ export async function importBackupFile(file: File): Promise<ImportResult> {
 export async function resetToDemoSeed(): Promise<{ products: number; tables: number }> {
   await db.products.clear();
   await db.products.bulkPut(MENU_SEED);
-  await db.tables.bulkPut(DEFAULT_TABLES);
+  await tablesTable.bulkPut(DEFAULT_TABLES);
   return {
     products: MENU_SEED.length,
     tables: DEFAULT_TABLES.length,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquarePlus, Minus, Plus, ReceiptText, Tag } from "lucide-react";
+import { MessageSquarePlus, Minus, Plus, ReceiptText, Tag, Trash2, Edit3, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { formatIDR } from "../data/menu";
 import { t } from "../locales/en";
@@ -34,6 +34,7 @@ export function CartPanel({
     setItemNote,
     increaseLine,
     decreaseLine,
+    removeItem,
     clearOrder,
     saveDraft,
   } = pos;
@@ -43,6 +44,8 @@ export function CartPanel({
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [inputDiscountValue, setInputDiscountValue] = useState("");
   const [inputDiscountType, setInputDiscountType] = useState<"percent" | "fixed">("percent");
+
+  const totalItemCount = lines.reduce((sum, l) => sum + l.qty, 0);
 
   const handleClear = () => {
     if (lines.length === 0) return;
@@ -63,7 +66,7 @@ export function CartPanel({
   };
 
   const handleSaveNote = (itemId: string) => {
-    setItemNote(itemId, noteInput);
+    setItemNote(itemId, noteInput.trim());
     setEditingNoteId(null);
     setNoteInput("");
   };
@@ -82,25 +85,42 @@ export function CartPanel({
   return (
     <section
       aria-label={t.cart.title}
-      className="receipt-paper flex flex-col overflow-hidden rounded-xl border border-ink/10 shadow-[0_18px_40px_-24px_rgb(20_33_31/0.35)] lg:max-h-[calc(100vh-13rem)]"
+      className="flex h-full max-h-full flex-col overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-md"
     >
-      <div className="px-5 pt-5">
-        <p className="label-caps text-[11px] font-semibold text-ink/55">
-          {t.cart.orderPrefix} {orderNo} ·{" "}
-          {orderType === "bawa-pulang"
-            ? t.receipt.orderTypeTakeaway
-            : t.receipt.orderTypeTable(tableNumber)}
-        </p>
-        <div className="mt-1.5 flex items-center justify-between gap-2">
-          <h2 className="font-display text-lg font-bold tracking-tight text-ink">
-            {t.cart.title}
-          </h2>
-          <Button variant="danger-ghost" size="sm" onClick={handleClear}>
-            {t.cart.clear}
-          </Button>
+      {/* Header Section */}
+      <div className="border-b border-ink/10 bg-white px-4 pt-3.5 pb-3 shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-display text-base font-bold tracking-tight text-ink">
+                {t.cart.title}
+              </h2>
+              <span className="rounded-md bg-ink/5 px-2 py-0.5 text-xs font-bold text-ink/70">
+                #{orderNo}
+              </span>
+            </div>
+            <p className="text-xs font-medium text-ink/50 mt-0.5">
+              {totalItemCount} item dipilih ·{" "}
+              {orderType === "bawa-pulang"
+                ? "Bawa Pulang"
+                : `Makan di Tempat (${String(tableNumber).padStart(2, "0")})`}
+            </p>
+          </div>
+
+          {lines.length > 0 && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-coral hover:bg-coral/10 transition-colors"
+            >
+              <Trash2 size={13} />
+              <span>{t.cart.clear}</span>
+            </button>
+          )}
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg bg-ink/5 p-1">
+        {/* Order Type Toggle */}
+        <div className="mt-2.5 grid grid-cols-2 gap-1.5 rounded-xl bg-mineral/70 p-1">
           <TypeToggle
             active={orderType === "bawa-pulang"}
             label={t.cart.takeaway}
@@ -108,66 +128,76 @@ export function CartPanel({
           />
           <TypeToggle
             active={orderType === "meja"}
-            label={`${t.cart.tableLabel} ${String(tableNumber).padStart(2, "0")}`}
+            label={`Makan di Tempat (${String(tableNumber).padStart(2, "0")})`}
             onClick={() => setOrderType("meja")}
           />
         </div>
 
-        {orderType === "meja" && (
-          <div className="mt-2.5 flex items-center justify-between px-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-ink/60">Pilih Meja</span>
-            <select
-              value={tableNumber}
-              onChange={(e) => pos.setTableNumber(Number.parseInt(e.target.value, 10))}
-              className="h-8 rounded-lg border border-ink/15 bg-white px-2.5 text-xs font-bold text-ink focus:border-ink/40 focus:outline-none focus:ring-1 focus:ring-counterlime"
-            >
-              {pos.tables.map((tbl) => {
-                const numMatch = tbl.name.match(/\d+/);
-                const num = numMatch ? Number.parseInt(numMatch[0], 10) : 1;
-                return (
-                  <option key={tbl.id} value={num}>
-                    {tbl.name} ({tbl.area || "Utama"} · {tbl.seats} Kursi)
-                  </option>
-                );
-              })}
-            </select>
+        {/* Table & Guest selectors */}
+        <div className="mt-2 flex items-center justify-between gap-2 pt-0.5">
+          {orderType === "meja" ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-ink/60">Meja:</span>
+              <select
+                value={tableNumber}
+                onChange={(e) => pos.setTableNumber(Number.parseInt(e.target.value, 10))}
+                className="h-7 rounded-lg border border-ink/15 bg-white px-2 text-xs font-bold text-ink focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
+              >
+                {pos.tables.map((tbl) => {
+                  const numMatch = tbl.name.match(/\d+/);
+                  const num = numMatch ? Number.parseInt(numMatch[0], 10) : 1;
+                  return (
+                    <option key={tbl.id} value={num}>
+                      {tbl.name} ({tbl.area || "Utama"})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          ) : (
+            <span className="text-xs font-medium text-ink/50">Takeaway (Bawa pulang)</span>
+          )}
+
+          <div className="flex items-center gap-1.5 ml-auto">
+            <span className="text-xs font-bold text-ink/60">Tamu:</span>
+            <div className="flex items-center gap-1 bg-mineral/50 rounded-lg p-0.5 border border-ink/10">
+              <QtyButton
+                label="Kurangi jumlah tamu"
+                onClick={() => setGuests(Math.max(1, guests - 1))}
+              >
+                <Minus size={11} strokeWidth={2.6} />
+              </QtyButton>
+              <span className="min-w-6 text-center font-display text-xs font-bold text-ink">
+                {guests}
+              </span>
+              <QtyButton
+                label="Tambah jumlah tamu"
+                onClick={() => setGuests(guests + 1)}
+              >
+                <Plus size={11} strokeWidth={2.6} />
+              </QtyButton>
+            </div>
           </div>
-        )}
-
-        <div className="mt-3 flex items-center justify-between px-1">
-          <span className="text-sm font-medium text-ink/70">Jumlah tamu</span>
-          <span className="flex items-center gap-2">
-            <QtyButton
-              label="Kurangi jumlah tamu"
-              onClick={() => setGuests(Math.max(1, guests - 1))}
-            >
-              <Minus size={13} strokeWidth={2.6} />
-            </QtyButton>
-            <span className="min-w-12 text-center font-display text-sm font-bold text-ink">
-              {guests} {t.cart.guestsUnit}
-            </span>
-            <QtyButton
-              label="Tambah jumlah tamu"
-              onClick={() => setGuests(guests + 1)}
-            >
-              <Plus size={13} strokeWidth={2.6} />
-            </QtyButton>
-          </span>
         </div>
-
-        <div className="receipt-perforation mt-4" />
       </div>
 
+      {/* Item List (Spacious & Clean Preview) */}
       {lines.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-8 py-14 text-center">
-          <ReceiptText size={30} className="text-ink/25" aria-hidden="true" />
-          <p className="font-display text-base font-semibold text-ink/70">
-            {t.cart.emptyTitle}
-          </p>
-          <p className="text-sm text-ink/45">{t.cart.emptyBody}</p>
+        <div className="flex flex-1 min-h-0 flex-col items-center justify-center gap-2.5 p-6 text-center bg-mineral/20">
+          <div className="w-12 h-12 rounded-2xl bg-mineral flex items-center justify-center border border-ink/10 text-ink/30 shadow-2xs">
+            <ReceiptText size={24} />
+          </div>
+          <div>
+            <p className="font-display text-sm font-bold text-ink/70">
+              {t.cart.emptyTitle}
+            </p>
+            <p className="text-xs text-ink/45 mt-0.5 max-w-[200px] mx-auto">
+              Pilih menu dari katalog di sebelah kiri untuk mulai transaksi.
+            </p>
+          </div>
         </div>
       ) : (
-        <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 py-3">
+        <ul className="flex-1 min-h-0 overflow-y-auto px-3.5 py-3 space-y-2 bg-mineral/20 overscroll-contain divide-y-0">
           {lines.map((line) => {
             const item = pos.products.find((p) => p.id === line.itemId);
             if (!item) return null;
@@ -176,88 +206,138 @@ export function CartPanel({
             return (
               <li
                 key={line.itemId}
-                className="relative rounded-lg bg-white/70 border border-ink/5 p-2.5 shadow-2xs"
+                className="group relative rounded-xl bg-white border border-ink/10 p-2.5 shadow-2xs hover:border-ink/20 transition-all"
               >
-                <div className="flex items-center gap-3">
+                {/* Main Row: Image + Name & Unit Price + Subtotal */}
+                <div className="flex items-start gap-2.5">
                   <FoodImage
                     item={item}
-                    className="h-11 w-11 shrink-0 rounded-md border border-ink/10 object-cover"
+                    className="h-12 w-12 shrink-0 rounded-lg border border-ink/10 object-cover shadow-2xs"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-ink">{item.name}</p>
-                    <p className="text-xs text-ink/50">
-                      {formatIDR(item.price)}
+                    <div className="flex items-start justify-between gap-1.5">
+                      <p className="font-bold text-xs text-ink leading-snug truncate">
+                        {item.name}
+                      </p>
+                      <p className="shrink-0 font-display text-xs font-bold tracking-tight text-ink">
+                        {formatIDR(item.price * line.qty)}
+                      </p>
+                    </div>
+                    <p className="text-[11px] text-ink/50 mt-0.5">
+                      {formatIDR(item.price)} / porsi
                     </p>
-                    <div className="mt-1 flex items-center gap-1.5">
-                      <QtyButton
-                        label={`${t.cart.itemQtyDecrease}: ${item.name}`}
-                        onClick={() => decreaseLine(line.itemId)}
-                      >
-                        <Minus size={12} strokeWidth={2.6} />
-                      </QtyButton>
-                      <span
-                        aria-live="polite"
-                        className="min-w-6 text-center font-display text-sm font-bold text-ink"
-                      >
-                        {line.qty}
-                      </span>
-                      <QtyButton
-                        label={`${t.cart.itemQtyIncrease}: ${item.name}`}
-                        onClick={() => increaseLine(line.itemId)}
-                      >
-                        <Plus size={12} strokeWidth={2.6} />
-                      </QtyButton>
 
+                    {/* Stepper + Note + Delete Actions */}
+                    <div className="mt-2 flex items-center justify-between gap-1.5">
+                      {/* Qty Stepper */}
+                      <div className="flex items-center gap-0.5 bg-mineral/60 rounded-lg p-0.5 border border-ink/10">
+                        <QtyButton
+                          label={`${t.cart.itemQtyDecrease}: ${item.name}`}
+                          onClick={() => decreaseLine(line.itemId)}
+                        >
+                          <Minus size={11} strokeWidth={2.6} />
+                        </QtyButton>
+                        <span
+                          aria-live="polite"
+                          className="min-w-6 text-center font-display text-xs font-bold text-ink"
+                        >
+                          {line.qty}
+                        </span>
+                        <QtyButton
+                          label={`${t.cart.itemQtyIncrease}: ${item.name}`}
+                          onClick={() => increaseLine(line.itemId)}
+                        >
+                          <Plus size={11} strokeWidth={2.6} />
+                        </QtyButton>
+                      </div>
+
+                      {/* Catatan / Note Trigger */}
                       <button
                         type="button"
                         onClick={() => handleOpenNote(line.itemId, line.note)}
                         className={cn(
-                          "ml-2 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium transition",
+                          "inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-semibold transition-colors border",
                           line.note
-                            ? "bg-amber-100 text-amber-900 font-bold"
-                            : "text-ink/40 hover:bg-ink/5 hover:text-ink",
+                            ? "bg-amber-50 border-amber-300 text-amber-900 font-bold"
+                            : "bg-white border-ink/12 text-ink/60 hover:text-ink hover:border-ink/30"
                         )}
                       >
-                        <MessageSquarePlus size={12} />
-                        {line.note ? "Edit Catatan" : "+ Catatan"}
+                        <MessageSquarePlus size={11} className={line.note ? "text-amber-700" : "text-ink/40"} />
+                        <span>{line.note ? "Ubah Catatan" : "+ Catatan"}</span>
+                      </button>
+
+                      {/* Remove Line Button */}
+                      <button
+                        type="button"
+                        aria-label={`Hapus ${item.name}`}
+                        title="Hapus item"
+                        onClick={() => removeItem(line.itemId)}
+                        className="h-6 w-6 rounded-md inline-flex items-center justify-center text-ink/35 hover:text-coral hover:bg-coral/10 transition-colors ml-auto"
+                      >
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
-                  <p className="shrink-0 self-center font-display text-sm font-bold tracking-tight text-ink">
-                    {formatIDR(item.price * line.qty)}
-                  </p>
                 </div>
 
+                {/* Display Active Note Pill */}
                 {line.note && !isEditingNote && (
-                  <p className="mt-2 rounded bg-amber-50/80 px-2 py-1 text-[11px] font-semibold text-amber-900 border border-amber-200/50">
-                    📝 {line.note}
-                  </p>
+                  <div className="mt-2 flex items-center justify-between rounded-lg bg-amber-50/90 border border-amber-200/80 px-2.5 py-1 text-xs text-amber-950 font-medium">
+                    <span className="truncate flex items-center gap-1 text-[11px]">
+                      <span>📝</span>
+                      <span className="font-semibold">{line.note}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenNote(line.itemId, line.note)}
+                      className="ml-2 shrink-0 text-[10px] font-bold text-amber-800 hover:underline flex items-center gap-0.5"
+                    >
+                      <Edit3 size={10} /> Edit
+                    </button>
+                  </div>
                 )}
 
+                {/* Inline Note Editor */}
                 {isEditingNote && (
-                  <div className="mt-2.5 flex items-center gap-1.5">
+                  <div className="mt-2 rounded-lg bg-mineral/60 border border-ink/15 p-2 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-ink/70">
+                      <span>Catatan Pesanan:</span>
+                      <button
+                        type="button"
+                        onClick={() => setEditingNoteId(null)}
+                        className="text-ink/40 hover:text-ink"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
                     <input
                       type="text"
                       autoFocus
                       value={noteInput}
                       onChange={(e) => setNoteInput(e.target.value)}
-                      placeholder="Contoh: Less ice, pedas sedang, tanpa bawang"
-                      className="flex-1 rounded border border-ink/20 bg-white px-2 py-1 text-xs text-ink placeholder:text-ink/35 focus:outline-none focus:ring-1 focus:ring-counterlime"
+                      placeholder="Contoh: Tanpa gula, pedas level 3..."
+                      className="w-full rounded-md border border-ink/20 bg-white px-2 py-1 text-xs text-ink placeholder:text-ink/40 focus:border-ink/50 focus:outline-none focus:ring-1 focus:ring-counterlime"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveNote(line.itemId);
+                        if (e.key === "Escape") setEditingNoteId(null);
+                      }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => handleSaveNote(line.itemId)}
-                      className="rounded bg-ink px-2.5 py-1 text-xs font-bold text-white hover:bg-ink/90"
-                    >
-                      Simpan
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingNoteId(null)}
-                      className="rounded border border-ink/20 px-2 py-1 text-xs font-medium text-ink/60 hover:bg-ink/5"
-                    >
-                      Batal
-                    </button>
+                    <div className="flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setEditingNoteId(null)}
+                        className="rounded px-2 py-0.5 text-xs font-medium text-ink/60 hover:bg-ink/5"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveNote(line.itemId)}
+                        className="rounded bg-ink px-2 py-0.5 text-xs font-bold text-white hover:bg-ink/90 flex items-center gap-1"
+                      >
+                        <Check size={11} /> Simpan
+                      </button>
+                    </div>
                   </div>
                 )}
               </li>
@@ -266,11 +346,10 @@ export function CartPanel({
         </ul>
       )}
 
-      <div className="px-5 pb-5">
-        <div className="receipt-perforation mb-3" />
-
+      {/* Order Summary & Financials */}
+      <div className="border-t border-ink/10 bg-white px-4 pt-3 pb-3.5 shrink-0 shadow-lg space-y-2">
         {/* Discount & Promo Trigger */}
-        <div className="mb-3 flex items-center justify-between border-b border-ink/10 pb-2.5">
+        <div className="flex items-center justify-between border-b border-ink/8 pb-1.5">
           <button
             type="button"
             onClick={() => {
@@ -278,17 +357,26 @@ export function CartPanel({
               setInputDiscountValue(discountValue > 0 ? String(discountValue) : "");
               setShowDiscountModal(true);
             }}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-ink/70 hover:text-ink"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-ink/70 hover:text-ink transition-colors"
           >
-            <Tag size={13} className="text-counterlime-dark" />
+            <Tag size={12} className="text-counterlime-dark" />
             {discountValue > 0 ? (
               <span className="text-counterlime-dark font-extrabold">
                 Diskon: {discountType === "percent" ? `${discountValue}%` : formatIDR(discountValue)} (Ubah)
               </span>
             ) : (
-              "+ Tambah Diskon / Promo"
+              <span className="hover:underline">+ Tambah Diskon / Promo</span>
             )}
           </button>
+          {discountValue > 0 && (
+            <button
+              type="button"
+              onClick={() => setDiscount("percent", 0)}
+              className="text-[11px] font-semibold text-coral hover:underline"
+            >
+              Hapus
+            </button>
+          )}
         </div>
 
         <dl className="space-y-1 text-xs">
@@ -326,28 +414,40 @@ export function CartPanel({
             </div>
           )}
 
-          <div className="flex items-baseline justify-between pt-2 border-t border-ink/10">
+          <div className="flex items-baseline justify-between pt-1.5 border-t border-ink/10 mt-1">
             <dt className="font-display text-sm font-bold text-ink">
               {t.cart.totalLabel}
             </dt>
-            <dd className="font-display text-2xl font-bold tracking-tight text-ink">
+            <dd className="font-display text-xl font-bold tracking-tight text-ink">
               {formatIDR(totals.total)}
             </dd>
           </div>
         </dl>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <Button variant="outline" onClick={handleSaveToKitchen} disabled={lines.length === 0}>
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-2 pt-0.5">
+          <Button
+            variant="outline"
+            onClick={handleSaveToKitchen}
+            disabled={lines.length === 0}
+            className="font-bold text-xs h-9.5 rounded-xl"
+          >
             Kirim ke Dapur
           </Button>
-          <Button onClick={onPay} disabled={lines.length === 0}>
+          <Button
+            variant="primary"
+            onClick={onPay}
+            disabled={lines.length === 0}
+            className="font-bold text-xs h-9.5 rounded-xl"
+          >
             {t.cart.payPrefix} {formatIDR(totals.total)}
           </Button>
         </div>
 
         <Button
           variant="ghost"
-          className="mt-2 w-full text-xs"
+          size="sm"
+          className="w-full text-[11px] font-semibold text-ink/60 hover:text-ink h-7.5 rounded-lg"
           onClick={() =>
             void getPrinterDriver().printReceipt({
               orderNo,
@@ -364,7 +464,7 @@ export function CartPanel({
           }
         >
           Cetak struk
-          <kbd className="kbd-hint ml-1 rounded border border-ink/20 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-ink/60">
+          <kbd className="kbd-hint ml-1.5 rounded border border-ink/20 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-ink/60">
             P
           </kbd>
         </Button>
@@ -380,7 +480,7 @@ export function CartPanel({
             role="dialog"
             aria-modal="true"
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-xl border border-ink/10 bg-white p-5 shadow-xl"
+            className="w-full max-w-sm rounded-2xl border border-ink/10 bg-white p-5 shadow-2xl"
           >
             <h3 className="font-display text-base font-bold text-ink">
               Terapkan Diskon / Potongan
@@ -394,9 +494,9 @@ export function CartPanel({
                 type="button"
                 onClick={() => setInputDiscountType("percent")}
                 className={cn(
-                  "rounded-lg border py-2 text-xs font-bold transition",
+                  "rounded-xl border py-2 text-xs font-bold transition-all",
                   inputDiscountType === "percent"
-                    ? "border-counterlime bg-counterlime/25 text-ink"
+                    ? "border-counterlime-dark bg-counterlime text-ink shadow-xs"
                     : "border-ink/15 text-ink/60 hover:bg-ink/5",
                 )}
               >
@@ -406,9 +506,9 @@ export function CartPanel({
                 type="button"
                 onClick={() => setInputDiscountType("fixed")}
                 className={cn(
-                  "rounded-lg border py-2 text-xs font-bold transition",
+                  "rounded-xl border py-2 text-xs font-bold transition-all",
                   inputDiscountType === "fixed"
-                    ? "border-counterlime bg-counterlime/25 text-ink"
+                    ? "border-counterlime-dark bg-counterlime text-ink shadow-xs"
                     : "border-ink/15 text-ink/60 hover:bg-ink/5",
                 )}
               >
@@ -427,7 +527,7 @@ export function CartPanel({
                 value={inputDiscountValue}
                 onChange={(e) => setInputDiscountValue(e.target.value)}
                 placeholder={inputDiscountType === "percent" ? "Contoh: 10" : "Contoh: 15000"}
-                className="mt-1 w-full rounded-lg border border-ink/15 bg-white px-3 py-2 text-sm font-bold text-ink focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
+                className="mt-1 w-full rounded-xl border border-ink/15 bg-white px-3 py-2 text-sm font-bold text-ink focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-counterlime/60"
               />
             </div>
 
@@ -439,7 +539,7 @@ export function CartPanel({
               >
                 Batal
               </Button>
-              <Button size="sm" onClick={handleApplyDiscount}>
+              <Button size="sm" variant="primary" onClick={handleApplyDiscount}>
                 Terapkan Diskon
               </Button>
             </div>
@@ -465,8 +565,10 @@ function TypeToggle({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "pressable h-9 rounded-md text-sm font-medium transition",
-        active ? "bg-counterlime font-semibold text-ink shadow-sm" : "text-ink/55 hover:text-ink",
+        "pressable h-8 rounded-lg text-xs font-semibold transition-all",
+        active
+          ? "bg-counterlime text-ink shadow-xs font-bold"
+          : "text-ink/60 hover:text-ink",
       )}
     >
       {label}
@@ -489,7 +591,7 @@ function QtyButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="pressable inline-flex h-6 w-6 items-center justify-center rounded-md border border-ink/15 bg-white text-ink/70 hover:border-ink/35 hover:bg-white hover:text-ink"
+      className="pressable inline-flex h-7 w-7 items-center justify-center rounded-md border border-ink/15 bg-white text-ink hover:border-ink/40 hover:bg-mineral/40 transition-colors shrink-0"
     >
       {children}
     </button>

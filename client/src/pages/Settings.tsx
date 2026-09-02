@@ -1,13 +1,18 @@
 import { useState, useRef } from "react";
+import { useLocation } from "wouter";
 import {
   Banknote,
+  BookOpen,
   FileDown,
   FileSpreadsheet,
   FileUp,
   Percent,
   Printer,
+  Radio,
   RotateCcw,
+  Smartphone,
   Store,
+  Vault,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -23,8 +28,12 @@ import {
 } from "../lib/exporters";
 import { getPrinterDriver, setPrinterDriver } from "../services/printer";
 import { cn } from "../lib/cn";
+import { NetworkHubModal } from "../components/NetworkHubModal";
+import { LocalServerGuideModal } from "../components/LocalServerGuideModal";
+import { getNetworkHostInfo } from "../services/localSyncServer";
 
 export default function Settings() {
+  const [, setLocation] = useLocation();
   const {
     products,
     reloadProducts,
@@ -45,10 +54,13 @@ export default function Settings() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentDriver, setCurrentDriver] = useState(() => getPrinterDriver());
+  const hostInfo = getNetworkHostInfo();
 
   // Modals state
   const [taxModalOpen, setTaxModalOpen] = useState(false);
   const [shiftModalOpen, setShiftModalOpen] = useState(false);
+  const [networkModalOpen, setNetworkModalOpen] = useState(false);
+  const [guideModalOpen, setGuideModalOpen] = useState(false);
 
   // Tax form state
   const [tempTaxEnabled, setTempTaxEnabled] = useState(taxEnabled);
@@ -223,7 +235,51 @@ export default function Settings() {
             }
             actionLabel={activeShift ? "Tutup Shift" : "Buka Shift"}
             onAction={() => setShiftModalOpen(true)}
-          />
+            wide
+          >
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocation("/laci-kas")}
+              >
+                <Vault size={15} className="text-counterlime-dark" aria-hidden="true" />
+                Buka Modul Laci Kas Penuh
+              </Button>
+            </div>
+          </SettingsCard>
+
+          {/* Server Lokal & Multi-Device Host */}
+          <SettingsCard
+            icon={<Radio size={19} aria-hidden="true" />}
+            label="Server Lokal & Integrasi Multi-Device"
+            value={`${hostInfo.baseUrl} · Aktif`}
+            note="Jalankan sistem di laptop/tablet sebagai host server lokal. Terhubung ke HP Pelayan Keliling (/pelayan) & Tablet Dapur (/dapur) via WiFi tanpa kuota internet."
+            actionLabel="Pusat Jaringan & QR"
+            onAction={() => setNetworkModalOpen(true)}
+            wide
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setGuideModalOpen(true)}
+                className="gap-1.5"
+              >
+                <BookOpen size={15} />
+                📖 Panduan & Arahan Penerapan
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNetworkModalOpen(true)}
+                className="gap-1.5"
+              >
+                <Smartphone size={15} />
+                Pairing HP Pelayan & Dapur
+              </Button>
+            </div>
+          </SettingsCard>
 
           {/* Backup */}
           <SettingsCard
@@ -552,6 +608,19 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      {/* Modal Pusat Jaringan & Pairing QR */}
+      <NetworkHubModal
+        open={networkModalOpen}
+        onClose={() => setNetworkModalOpen(false)}
+      />
+
+      {/* Modal Panduan Penerapan Server Lokal */}
+      <LocalServerGuideModal
+        open={guideModalOpen}
+        onClose={() => setGuideModalOpen(false)}
+        onOpenPairingHub={() => setNetworkModalOpen(true)}
+      />
     </div>
   );
 }

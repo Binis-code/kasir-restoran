@@ -159,17 +159,29 @@ export default function Reports() {
           ) : (
             <>
               <div
-                className="mt-5 flex h-36 items-end gap-1.5"
+                className="mt-6 flex h-40 items-end gap-3 rounded-lg bg-mineral/50 p-4"
                 role="img"
                 aria-label={`${t.reportsPage.title} ${tab}`}
               >
                 {activeRows.map((r) => (
                   <div
                     key={r.key}
-                    title={`${labelOf(r)} — ${formatIDR(r.sales)}`}
-                    className="min-w-6 flex-1 rounded-t-md bg-counterlime hover:bg-ink"
-                    style={{ height: `${Math.max(4, (r.sales / maxSales) * 100)}%` }}
-                  />
+                    className="flex flex-1 flex-col items-center gap-1.5 h-full justify-end max-w-16"
+                  >
+                    <span className="text-[10px] font-semibold text-ink/60">
+                      {r.sales >= 1_000_000
+                        ? `${(r.sales / 1_000_000).toFixed(1)}jt`
+                        : `${Math.round(r.sales / 1000)}rb`}
+                    </span>
+                    <div
+                      title={`${labelOf(r)} — ${formatIDR(r.sales)}`}
+                      className="w-full rounded-t-lg bg-counterlime transition-all duration-300 hover:bg-ink"
+                      style={{ height: `${Math.max(12, (r.sales / maxSales) * 100)}%` }}
+                    />
+                    <span className="text-[10px] font-medium text-ink/50 truncate max-w-full">
+                      {labelOf(r).split(",")[0]}
+                    </span>
+                  </div>
                 ))}
               </div>
 

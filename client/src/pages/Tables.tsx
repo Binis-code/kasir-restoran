@@ -1,13 +1,28 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Armchair, Coffee, Edit, Plus, UtensilsCrossed } from "lucide-react";
+import QRCode from "qrcode";
+import {
+  Armchair,
+  Coffee,
+  Edit,
+  Plus,
+  UtensilsCrossed,
+  QrCode,
+  ExternalLink,
+  Copy,
+  Printer,
+  Check,
+  Wifi,
+} from "lucide-react";
 import { formatIDR } from "../data/menu";
 import { t } from "../locales/en";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/Button";
 import { TableModal } from "../components/TableModal";
 import { usePos, type TableRow } from "../components/PosContext";
+import { getNetworkHostInfo } from "../services/localSyncServer";
 import { cn } from "../lib/cn";
+import { toast } from "sonner";
 
 export default function Tables() {
   const pos = usePos();
@@ -15,6 +30,10 @@ export default function Tables() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState<TableRow | null>(null);
   const [activeAreaFilter, setActiveAreaFilter] = useState<string>("Semua");
+  const [qrModalTable, setQrModalTable] = useState<TableRow | null>(null);
+  const [qrImageDataUrl, setQrImageDataUrl] = useState<string>("");
+  const [hasCopied, setHasCopied] = useState(false);
+  const hostInfo = getNetworkHostInfo();
 
   const availableAreas = useMemo(() => {
     const set = new Set<string>();
@@ -38,6 +57,12 @@ export default function Tables() {
     e.stopPropagation();
     setSelectedTable(table);
     setModalOpen(true);
+  };
+
+  const handleOpenQr = (table: TableRow, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setQrModalTable(table);
+    setHasCopied(false);
   };
 
   const handleSave = async (table: TableRow) => {
@@ -80,11 +105,41 @@ export default function Tables() {
       return {
         orderNo: activeOrder.no,
         total: activeOrder.total,
-        label: activeOrder.status === "siap" ? "Siap Disajikan" : "Disimpan",
+        label: activeOrder.status === "siap" ? "Siap Disajikan" : "Dimasak",
       };
     }
 
     return null;
+  };
+
+  const getTableOrderUrl = (table: TableRow) => {
+    const slug = encodeURIComponent(table.name.toLowerCase().replace(/\s+/g, "-"));
+    return `${hostInfo.baseUrl}/order/${slug}`;
+  };
+
+  useEffect(() => {
+    if (!qrModalTable) {
+      setQrImageDataUrl("");
+      return;
+    }
+    const url = getTableOrderUrl(qrModalTable);
+    QRCode.toDataURL(url, {
+      width: 320,
+      margin: 1,
+      color: { dark: "#14211F", light: "#FFFFFF" },
+    })
+      .then(setQrImageDataUrl)
+      .catch(console.error);
+  }, [qrModalTable, hostInfo.baseUrl]);
+
+  const handleCopyLink = () => {
+    if (!qrModalTable) return;
+    const url = getTableOrderUrl(qrModalTable);
+    navigator.clipboard.writeText(url).then(() => {
+      setHasCopied(true);
+      toast.success("Tautan QR Meja disalin ke clipboard!");
+      setTimeout(() => setHasCopied(false), 2500);
+    });
   };
 
   return (
@@ -98,62 +153,68 @@ export default function Tables() {
               Total: {pos.tables.length} meja makan terdaftar
             </p>
           </div>
-          <Button onClick={handleOpenAdd}>
-            <Plus size={16} className="mr-1" />
-            Tambah Meja Baru
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation("/pelayan")}
+              className="gap-1.5 font-bold"
+            >
+              <UtensilsCrossed size={15} />
+              Mode Pelayan Cepat
+            </Button>
+            <Button size="sm" onClick={handleOpenAdd} className="gap-1.5 font-bold">
+              <Plus size={15} />
+              Tambah Meja
+            </Button>
+          </div>
         </div>
 
-        {/* Area Filter Tabs */}
-        {availableAreas.length > 0 && (
-          <div className="mb-5 flex flex-wrap items-center gap-1.5 border-b border-ink/10 pb-3">
-            <span className="text-xs font-bold text-ink/50 mr-2">Filter Area:</span>
+        {/* Filter Area Tabs */}
+        {availableAreas.length > 1 && (
+          <div className="mb-6 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setActiveAreaFilter("Semua")}
               className={cn(
-                "rounded-lg px-3 py-1 text-xs font-semibold transition-all",
+                "rounded-lg px-3 py-1.5 text-xs font-medium transition",
                 activeAreaFilter === "Semua"
-                  ? "bg-ink text-mineral shadow-xs"
-                  : "bg-ink/5 text-ink/70 hover:bg-ink/10",
+                  ? "bg-ink font-semibold text-mineral shadow-xs"
+                  : "border border-ink/10 bg-white text-ink/65 hover:bg-ink/5",
               )}
             >
-              Semua Area ({pos.tables.length})
+              Semua ({pos.tables.length})
             </button>
-
-            {availableAreas.map((areaName) => {
-              const count = pos.tables.filter((t) => (t.area || "Utama") === areaName).length;
-              const isSelected = activeAreaFilter === areaName;
-              return (
-                <button
-                  key={areaName}
-                  type="button"
-                  onClick={() => setActiveAreaFilter(areaName)}
-                  className={cn(
-                    "rounded-lg px-3 py-1 text-xs font-semibold transition-all",
-                    isSelected
-                      ? "bg-counterlime text-ink font-bold shadow-xs"
-                      : "bg-ink/5 text-ink/70 hover:bg-ink/10",
-                  )}
-                >
-                  {areaName} ({count})
-                </button>
-              );
-            })}
+            {availableAreas.map((area) => (
+              <button
+                key={area}
+                type="button"
+                onClick={() => setActiveAreaFilter(area)}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                  activeAreaFilter === area
+                    ? "bg-ink font-semibold text-mineral shadow-xs"
+                    : "border border-ink/10 bg-white text-ink/65 hover:bg-ink/5",
+                )}
+              >
+                {area} ({pos.tables.filter((t) => (t.area || "Utama") === area).length})
+              </button>
+            ))}
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredTables.map((table) => {
             const activeInfo = getTableActiveOrder(table);
-            const isActive = !!activeInfo;
+            const isActive = Boolean(activeInfo);
 
             return (
               <article
                 key={table.id}
                 onClick={() => handleSelectTableAndOrder(table)}
                 className={cn(
-                  "card-hover cursor-pointer rounded-xl border bg-white p-5 transition-all hover:shadow-md",
+                  "card-hover cursor-pointer rounded-2xl border bg-white p-5 transition-all hover:shadow-md",
                   isActive
                     ? "border-counterlime ring-2 ring-counterlime/40"
                     : "border-ink/10 hover:border-ink/25",
@@ -163,7 +224,7 @@ export default function Tables() {
                   <div className="flex items-center gap-3">
                     <span
                       className={cn(
-                        "flex h-11 w-11 items-center justify-center rounded-lg",
+                        "flex h-11 w-11 items-center justify-center rounded-xl",
                         isActive ? "bg-counterlime text-ink" : "bg-ink/5 text-ink/60",
                       )}
                     >
@@ -176,16 +237,15 @@ export default function Tables() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={
-                        isActive
-                          ? "rounded-full bg-counterlime px-2.5 py-1 text-[11px] font-bold text-ink"
-                          : "rounded-full bg-ink/6 px-2.5 py-1 text-[11px] font-semibold text-ink/55"
-                      }
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      title="Lihat & Cetak QR Meja Pelanggan"
+                      onClick={(e) => handleOpenQr(table, e)}
+                      className="rounded-lg p-1.5 text-ink/50 hover:bg-counterlime/20 hover:text-ink transition-colors"
                     >
-                      {isActive ? activeInfo.label : t.tablesPage.empty}
-                    </span>
+                      <QrCode size={17} />
+                    </button>
 
                     <button
                       type="button"
@@ -198,20 +258,32 @@ export default function Tables() {
                   </div>
                 </div>
 
-                <h3 className="mt-3 font-display text-base font-bold tracking-tight text-ink">
-                  {table.name}
-                </h3>
+                <div className="mt-3 flex items-baseline justify-between">
+                  <h3 className="font-display text-base font-bold tracking-tight text-ink">
+                    {table.name}
+                  </h3>
+                  <span
+                    className={
+                      isActive
+                        ? "rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800"
+                        : "rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-ink/55"
+                    }
+                  >
+                    {isActive && activeInfo ? activeInfo.label : t.tablesPage.empty}
+                  </span>
+                </div>
+
                 <p className="mt-0.5 text-xs text-ink/50">
                   {t.tablesPage.seatsUnit(table.seats)}
                 </p>
 
-                {isActive ? (
+                {isActive && activeInfo ? (
                   <div className="mt-3 border-t border-dashed border-ink/15 pt-3">
                     <p className="font-display text-sm font-bold text-ink">
                       {t.tablesPage.activeOrder(activeInfo.orderNo, formatIDR(activeInfo.total))}
                     </p>
                     <p className="mt-0.5 text-[11px] font-semibold text-counterlime-dark">
-                      Klik untuk buka / tambah menu meja ini
+                      Klik untuk kelola pesanan meja ini
                     </p>
                   </div>
                 ) : (
@@ -226,9 +298,9 @@ export default function Tables() {
             );
           })}
 
-          <article className="card-hover rounded-xl border border-ink/10 bg-white p-5">
+          <article className="card-hover rounded-2xl border border-ink/10 bg-white p-5">
             <div className="flex items-center justify-between">
-              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-counterlime text-ink">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-counterlime text-ink">
                 <Coffee size={21} aria-hidden="true" />
               </span>
               <span className="rounded-full bg-ink px-2.5 py-1 text-[11px] font-semibold text-mineral">
@@ -242,6 +314,105 @@ export default function Tables() {
           </article>
         </div>
       </div>
+
+      {/* Table QR Modal */}
+      {qrModalTable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 text-center shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-counterlime text-ink">
+                  <QrCode size={16} />
+                </span>
+                <div className="text-left">
+                  <h3 className="text-sm font-bold text-ink">QR Order · {qrModalTable.name}</h3>
+                  <p className="text-[11px] text-ink/50">Area {qrModalTable.area || "Utama"}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQrModalTable(null)}
+                className="text-ink/50 hover:text-ink"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="mt-3 text-xs text-ink/60">
+              Pelanggan cukup scan QR ini di meja untuk melihat menu dan memesan langsung.
+            </p>
+
+            {/* QR Code Container */}
+            <div className="my-4 mx-auto flex h-60 w-60 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-ink/20 bg-slate-50 p-3 shadow-inner">
+              {qrImageDataUrl ? (
+                <img
+                  src={qrImageDataUrl}
+                  alt={`QR ${qrModalTable.name}`}
+                  className="h-48 w-48 rounded-xl object-contain shadow-xs bg-white p-1.5"
+                />
+              ) : (
+                <div className="flex h-48 w-48 items-center justify-center">
+                  <span className="text-xs text-ink/40 animate-pulse">Membuat QR...</span>
+                </div>
+              )}
+              <span className="mt-1.5 text-xs font-bold text-ink tracking-wide">
+                {qrModalTable.name} ({qrModalTable.area || "Area Restoran"})
+              </span>
+            </div>
+
+            {/* Direct URL display with LAN Wi-Fi badge */}
+            <div className="rounded-xl bg-slate-100 p-2.5 text-left text-xs text-ink/80 space-y-1">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-counterlime-dark">
+                <Wifi size={13} />
+                <span>URL Akses HP & Wi-Fi:</span>
+              </div>
+              <div className="font-mono text-[11px] break-all text-ink/70">
+                {getTableOrderUrl(qrModalTable)}
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="mt-4 space-y-2">
+              <a
+                href={getTableOrderUrl(qrModalTable)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-counterlime font-bold text-ink hover:bg-counterlime/90 text-xs shadow-sm"
+              >
+                <ExternalLink size={15} />
+                Buka Tampilan Pelanggan
+              </a>
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyLink}
+                  className="flex-1 gap-1.5 rounded-xl font-semibold text-xs"
+                >
+                  {hasCopied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                  {hasCopied ? "Tersalin!" : "Salin Link"}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    toast.success("Perintah cetak stiker QR meja dikirim!");
+                    window.print();
+                  }}
+                  className="flex-1 gap-1.5 rounded-xl font-semibold text-xs"
+                >
+                  <Printer size={14} />
+                  Cetak Stiker
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <TableModal
         open={modalOpen}
